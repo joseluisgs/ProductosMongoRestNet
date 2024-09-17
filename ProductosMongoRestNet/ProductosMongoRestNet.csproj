@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="MongoDB.Driver" Version="2.28.0" />
         <PackageReference Include="Serilog" Version="4.0.1" />
         <PackageReference Include="Serilog.Extensions" Version="8.0.2" />
         <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />

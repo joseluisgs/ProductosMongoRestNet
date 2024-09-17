@@ -13,6 +13,8 @@ public class BookStoreMongoConfig
         _logger = logger;
     }
 
+    // Esto es fundamental para que funcione la inyección de dependencias, al ser una clase de configuración
+    // necesita un copnstructoir vacío, ya que el otro es para la inyección de dependencias
     public BookStoreMongoConfig()
     {
     }

@@ -1,8 +1,8 @@
 using System.Text;
-using Microsoft.AspNetCore.Hosting.Server.Features;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using ProductosMongoRestNet.Database;
+using ProductosMongoRestNet.Services;
 using Serilog;
 using Serilog.Core;
 
@@ -40,8 +40,10 @@ app.MapControllers();
 
 // Ejecutamos la aplicación
 
-Console.WriteLine($"🚀 Running service in url: {builder.Configuration["urls"] ?? "not configured"} in mode {environment} 🟢");
-logger.Information($"🚀 Running service in url: {builder.Configuration["urls"] ?? "not configured"} in mode {environment} 🟢");
+Console.WriteLine(
+    $"🚀 Running service in url: {builder.Configuration["urls"] ?? "not configured"} in mode {environment} 🟢");
+logger.Information(
+    $"🚀 Running service in url: {builder.Configuration["urls"] ?? "not configured"} in mode {environment} 🟢");
 app.Run();
 
 
@@ -65,6 +67,12 @@ WebApplicationBuilder InitServices()
     myBuilder.Services.Configure<BookStoreMongoConfig>(
         myBuilder.Configuration.GetSection("BookStoreDatabase"));
     TryConnectionDataBase(); // Intentamos conectar a la base de datos
+
+    // Cache en memoria
+    myBuilder.Services.AddMemoryCache();
+
+    // Servicios de books
+    myBuilder.Services.AddSingleton<BooksService>();
 
 
     // Añadimos los controladores

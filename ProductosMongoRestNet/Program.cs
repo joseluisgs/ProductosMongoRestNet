@@ -1,8 +1,15 @@
 using System.Text;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using ProductosMongoRestNet.Database;
 using Serilog;
 using Serilog.Core;
+
+// Init local confing
+var environment = InitLocalEnvironment();
+
+// Init App Configuration
+var configuration = InitConfiguration();
 
 // Iniciamos la configuración externa de la aplicación
 var logger = InitLogConfig();
@@ -20,20 +27,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Probamos mongoDB
-const string connectionUri = "mongodb+srv://joseluisgs:Mongo1234Ejemplo2024@cluster0.pgdqg.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-var settings = MongoClientSettings.FromConnectionString(connectionUri);
-// Set the ServerApi field of the settings object to set the version of the Stable API on the client
-settings.ServerApi = new ServerApi(ServerApiVersion.V1);
-// Create a new client and connect to the server
-var client = new MongoClient(settings);
-// Send a ping to confirm a successful connection
-try {
-    var result = client.GetDatabase("admin").RunCommand<BsonDocument>(new BsonDocument("ping", 1));
-    Console.WriteLine("Pinged your deployment. You successfully connected to MongoDB!");
-} catch (Exception ex) {
-    Console.WriteLine(ex);
-}
 
 // Usamos HTTPS redirection
 app.UseHttpsRedirection();
@@ -62,34 +55,70 @@ WebApplicationBuilder InitServices()
         logging.AddSerilog(logger, true); // Añade Serilog como un proveedor de log
     });
     logger.Debug("Serilog added as default logger");
+
     
+    // Conexión a la base de datos
+    myBuilder.Services.Configure<BookStoreMongoConfig>(
+        myBuilder.Configuration.GetSection("BookStoreDatabase"));
+    TryConnectionDataBase(); // Intentamos conectar a la base de datos
+
+
     // Añadimos los controladores
     myBuilder.Services.AddControllers();
-    
-    
+
+
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     myBuilder.Services.AddEndpointsApiExplorer(); // para documentar la API
     myBuilder.Services.AddSwaggerGen(); // para documentar la API
     return myBuilder;
 }
 
+
+string InitLocalEnvironment()
+{
+    Console.OutputEncoding = Encoding.UTF8; // Necesario para mostrar emojis
+    var myEnvironment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "";
+    Console.WriteLine($"Environment: {myEnvironment}");
+    return myEnvironment;
+}
+
+// Inicializa la configuración de la aplicación
+IConfiguration InitConfiguration()
+{
+    var myConfiguration = new ConfigurationBuilder()
+        .AddJsonFile($"appsettings.{environment}.json", false, true)
+        .Build();
+    return myConfiguration;
+}
+
 // Inicializa la configuración externa de la aplicación
 Logger InitLogConfig()
 {
-    Console.OutputEncoding = Encoding.UTF8; // Necesario para mostrar emojis
-
-// Leemos en qué entorno estamos
-    var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "";
-    Console.WriteLine($"Environment: {environment}");
-
-
-// Configuramos Serilog
-    var configuration = new ConfigurationBuilder()
-        .AddJsonFile($"appsettings.{environment}.json", false, true)
-        .Build();
-
-// Creamos un logger con la configuración de Serilog
+    // Creamos un logger con la configuración de Serilog
     return new LoggerConfiguration()
         .ReadFrom.Configuration(configuration)
         .CreateLogger();
+}
+
+void TryConnectionDataBase()
+{
+    logger.Debug("Trying to connect to MongoDB");
+    // Leemos la cadena de conexión a la base de datos desde la configuración
+    var connectionString = configuration.GetSection("BookStoreDatabase:ConnectionString").Value;
+    var settings = MongoClientSettings.FromConnectionString(connectionString);
+    // Set the ServerApi field of the settings object to set the version of the Stable API on the client
+    settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+    // Create a new client and connect to the server
+    var client = new MongoClient(settings);
+    // Send a ping to confirm a successful connection
+    try
+    {
+        client.GetDatabase("DatabaseName").RunCommand<BsonDocument>(new BsonDocument("ping", 1));
+        logger.Information("🟢 You successfully connected to MongoDB!");
+    }
+    catch (Exception ex)
+    {
+        logger.Error(ex, "🔴 Error connecting to MongoDB");
+        Environment.Exit(1);
+    }
 }

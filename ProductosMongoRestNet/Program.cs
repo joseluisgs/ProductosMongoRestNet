@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using ProductosMongoRestNet.Database;
@@ -38,6 +39,9 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Ejecutamos la aplicación
+
+Console.WriteLine($"🚀 Running service in url: {builder.Configuration["urls"] ?? "not configured"} in mode {environment} 🟢");
+logger.Information($"🚀 Running service in url: {builder.Configuration["urls"] ?? "not configured"} in mode {environment} 🟢");
 app.Run();
 
 
@@ -56,7 +60,7 @@ WebApplicationBuilder InitServices()
     });
     logger.Debug("Serilog added as default logger");
 
-    
+
     // Conexión a la base de datos
     myBuilder.Services.Configure<BookStoreMongoConfig>(
         myBuilder.Configuration.GetSection("BookStoreDatabase"));
@@ -78,7 +82,7 @@ string InitLocalEnvironment()
 {
     Console.OutputEncoding = Encoding.UTF8; // Necesario para mostrar emojis
     var myEnvironment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "";
-    Console.WriteLine($"Environment: {myEnvironment}");
+    // Console.WriteLine($"Environment: {myEnvironment}");
     return myEnvironment;
 }
 
@@ -118,7 +122,7 @@ void TryConnectionDataBase()
     }
     catch (Exception ex)
     {
-        logger.Error(ex, "🔴 Error connecting to MongoDB");
+        logger.Error(ex, "🔴 Error connecting to , closing application");
         Environment.Exit(1);
     }
 }

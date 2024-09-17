@@ -27,12 +27,10 @@ public class BooksService : IBooksService
 
     public async Task<List<Book>> GetAllAsync()
     {
-        _logger.LogInformation("Getting all books from cache");
-        // return (await _booksCollection.Find(_ => true).ToListAsync()).ConvertAll(bookDocument => bookDocument.ToBook());
-        // Todo esto es porque no se puede hacer mapeo directamente con el método ToListAsync
+        _logger.LogInformation("Getting all books from database");
         var bookDocuments = await _booksCollection.Find(_ => true).ToListAsync();
         return bookDocuments.ConvertAll(bookDocument =>
-            bookDocument.ToBook()); // Mejor que usar Select porque es una lista
+            bookDocument.ToBook());
     }
 
     public async Task<Book?> GetByIdAsync(string id)
@@ -48,12 +46,14 @@ public class BooksService : IBooksService
         }
 
         // Si no está en la caché, lo obtenemos de la base de datos
+        _logger.LogInformation("Getting book from database");
         var bookDocument = await _booksCollection.Find(bookDocument => bookDocument.Id == id).FirstOrDefaultAsync();
         var book = bookDocument?.ToBook();
 
         // Si el libro está en la base de datos, lo guardamos en la caché
         if (book != null)
         {
+            _logger.LogInformation("Book not found in cache, caching it");
             _memoryCache.Set(cacheKey, book,
                 TimeSpan.FromMinutes(30)); // Ajusta el tiempo de caché según tus necesidades
             _logger.LogInformation("Caching the book");
@@ -71,9 +71,10 @@ public class BooksService : IBooksService
         // Inserta el documento en la base de datos
         await _booksCollection.InsertOneAsync(bookDocument);
 
+        _logger.LogInformation($"Book created with id: {bookDocument.Id}");
+
         // Convierte el documento a la entidad Book
         return bookDocument.ToBook();
-
     }
 
     public async Task<Book?> UpdateAsync(string id, Book book)
@@ -100,6 +101,8 @@ public class BooksService : IBooksService
             _logger.LogInformation($"Removed cached book with id: {id}");
         }
 
+        _logger.LogInformation($"Book updated with id: {id}");
+
         return updatedBook;
     }
 
@@ -109,7 +112,7 @@ public class BooksService : IBooksService
 
         // Elimina el documento de la base de datos y devuelve el documento eliminado
         var deletedDocument = await _booksCollection.FindOneAndDeleteAsync(bookDocument => bookDocument.Id == id);
-    
+
         var deletedBook = deletedDocument?.ToBook();
 
         // Genera la clave de caché
@@ -121,6 +124,8 @@ public class BooksService : IBooksService
             _memoryCache.Remove(cacheKey);
             _logger.LogInformation($"Removed cached book with id: {id}");
         }
+        
+        _logger.LogInformation($"Book deleted with id: {id}");
 
         return deletedBook;
     }

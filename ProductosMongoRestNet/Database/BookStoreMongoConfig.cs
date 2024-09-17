@@ -3,18 +3,28 @@ using MongoDB.Driver;
 
 namespace ProductosMongoRestNet.Database;
 
-public class BookStoreMongoConfig(ILogger logger)
+public class BookStoreMongoConfig
 {
-    public string ConnectionString { get; set; } = null!;
+    private readonly ILogger
+        _logger; // Add ILogger to the class No hagas por constructor, porque es una clase de configuración
 
-    public string DatabaseName { get; set; } = null!;
+    public BookStoreMongoConfig(ILogger<BookStoreMongoConfig> logger)
+    {
+        _logger = logger;
+    }
 
-    public string BooksCollectionName { get; set; } = null!;
+    public BookStoreMongoConfig()
+    {
+    }
+
+    public string ConnectionString { get; set; } = string.Empty;
+    public string DatabaseName { get; set; } = string.Empty;
+    public string BooksCollectionName { get; set; } = string.Empty;
 
 
     public void TryConnection()
     {
-        logger.LogInformation("Trying to connect to MongoDB");
+        _logger.LogInformation("Trying to connect to MongoDB");
         var settings = MongoClientSettings.FromConnectionString(ConnectionString);
         // Set the ServerApi field of the settings object to set the version of the Stable API on the client
         settings.ServerApi = new ServerApi(ServerApiVersion.V1);
@@ -24,11 +34,11 @@ public class BookStoreMongoConfig(ILogger logger)
         try
         {
             client.GetDatabase("DatabaseName").RunCommand<BsonDocument>(new BsonDocument("ping", 1));
-            logger.LogInformation("🟢 You successfully connected to MongoDB!");
+            _logger.LogInformation("🟢 You successfully connected to MongoDB!");
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "🔴 Error connecting to MongoDB");
+            _logger.LogError(ex, "🔴 Error connecting to MongoDB");
             Environment.Exit(1);
         }
     }

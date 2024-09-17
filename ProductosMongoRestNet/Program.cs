@@ -35,6 +35,8 @@ app.UseHttpsRedirection();
 // Habilitamos el middleware de Autorización
 app.UseAuthorization();
 
+app.UseRouting(); // Habilitamos el middleware de enrutamiento
+
 // Mapeamos los controladores a la aplicación
 app.MapControllers();
 
@@ -72,6 +74,12 @@ WebApplicationBuilder InitServices()
     myBuilder.Services.AddMemoryCache();
 
     // Servicios de books
+    // myBuilder.Services.AddSingleton<BooksService>();
+    // Si no quieres iniciar el controlador con la implementación directa, puedes hacerlo con la interfaz
+    // Registro de la interfaz y implementación
+    // myBuilder.Services.AddSingleton<BooksService>();
+
+    myBuilder.Services.AddSingleton<IBooksService, BooksService>();
     myBuilder.Services.AddSingleton<BooksService>();
 
 
@@ -98,7 +106,9 @@ string InitLocalEnvironment()
 IConfiguration InitConfiguration()
 {
     var myConfiguration = new ConfigurationBuilder()
-        .AddJsonFile($"appsettings.{environment}.json", false, true)
+        .SetBasePath(Directory.GetCurrentDirectory())
+        .AddJsonFile("appsettings.json", false, true)
+        .AddJsonFile($"appsettings.{environment}.json", true)
         .Build();
     return myConfiguration;
 }

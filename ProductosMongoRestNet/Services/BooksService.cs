@@ -66,6 +66,9 @@ public class BooksService : IBooksService
 
         // Cambiamos el Id del libro por un nuevo ObjectId (si no lo tiene), lo generaría MongoDB
         book.Id = ObjectId.GenerateNewId().ToString();
+        var timeStamp = DateTime.Now;
+        book.CreatedAt = timeStamp;
+        book.UpdatedAt = timeStamp;
 
         // Inserta el documento en la base de datos
         await _booksCollection.InsertOneAsync(book); // No lo guarda por eso generamos el Id
@@ -82,6 +85,7 @@ public class BooksService : IBooksService
 
         // Le ponemos el Id al libro, por si viene sin él
         book.Id = id;
+        book.UpdatedAt = DateTime.Now;
 
         // Realiza el reemplazo y devuelve el documento actualizado, devolvemos el documento actualizado (After)
         var updatedBook = await _booksCollection.FindOneAndReplaceAsync<Book>(

@@ -19,4 +19,10 @@ public class Book
     public string Category { get; set; } = null!;
 
     public string Author { get; set; } = null!;
+
+    [JsonPropertyName("createdAt")] 
+    public DateTime? CreatedAt { get; set; }
+
+    [JsonPropertyName("updatedAt")] 
+    public DateTime? UpdatedAt { get; set; }
 }

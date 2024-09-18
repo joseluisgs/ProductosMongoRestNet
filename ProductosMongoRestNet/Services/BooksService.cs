@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using ProductosMongoRestNet.Database;
-using ProductosMongoRestNet.Mappers;
 using ProductosMongoRestNet.Models;
 
 namespace ProductosMongoRestNet.Services;
@@ -10,7 +10,7 @@ namespace ProductosMongoRestNet.Services;
 public class BooksService : IBooksService
 {
     private const string CacheKeyPrefix = "Book_"; //Para evitar colisiones en la caché de memoria con otros elementos
-    private readonly IMongoCollection<BookDocument> _booksCollection;
+    private readonly IMongoCollection<Book> _booksCollection; // o Modelo O Documento de MongoDB
     private readonly ILogger _logger;
     private readonly IMemoryCache _memoryCache;
 
@@ -22,15 +22,13 @@ public class BooksService : IBooksService
         var mongoClient = new MongoClient(bookStoreDatabaseSettings.Value.ConnectionString);
         var mongoDatabase = mongoClient.GetDatabase(bookStoreDatabaseSettings.Value.DatabaseName);
         _booksCollection =
-            mongoDatabase.GetCollection<BookDocument>(bookStoreDatabaseSettings.Value.BooksCollectionName);
+            mongoDatabase.GetCollection<Book>(bookStoreDatabaseSettings.Value.BooksCollectionName);
     }
 
     public async Task<List<Book>> GetAllAsync()
     {
         _logger.LogInformation("Getting all books from database");
-        var bookDocuments = await _booksCollection.Find(_ => true).ToListAsync();
-        return bookDocuments.ConvertAll(bookDocument =>
-            bookDocument.ToBook());
+        return await _booksCollection.Find(_ => true).ToListAsync();
     }
 
     public async Task<Book?> GetByIdAsync(string id)
@@ -47,8 +45,7 @@ public class BooksService : IBooksService
 
         // Si no está en la caché, lo obtenemos de la base de datos
         _logger.LogInformation("Getting book from database");
-        var bookDocument = await _booksCollection.Find(bookDocument => bookDocument.Id == id).FirstOrDefaultAsync();
-        var book = bookDocument?.ToBook();
+        var book = await _booksCollection.Find(book => book.Id == id).FirstOrDefaultAsync();
 
         // Si el libro está en la base de datos, lo guardamos en la caché
         if (book != null)
@@ -66,31 +63,29 @@ public class BooksService : IBooksService
     public async Task<Book> CreateAsync(Book book)
     {
         _logger.LogInformation("Creating a new book");
-        var bookDocument = book.ToBookDocument();
+
+        // Cambiamos el Id del libro por un nuevo ObjectId (si no lo tiene), lo generaría MongoDB
+        book.Id = ObjectId.GenerateNewId().ToString();
 
         // Inserta el documento en la base de datos
-        await _booksCollection.InsertOneAsync(bookDocument);
+        await _booksCollection.InsertOneAsync(book); // No lo guarda por eso generamos el Id
 
-        _logger.LogInformation($"Book created with id: {bookDocument.Id}");
+        _logger.LogInformation($"Book created with id: {book.Id}");
 
         // Convierte el documento a la entidad Book
-        return bookDocument.ToBook();
+        return book;
     }
 
     public async Task<Book?> UpdateAsync(string id, Book book)
     {
         _logger.LogInformation($"Updating book with id: {id}");
-        var bookDocument = book.ToBookDocument();
-
+        
         // Realiza el reemplazo y devuelve el documento actualizado
-        var updatedDocument = await _booksCollection.FindOneAndReplaceAsync(
+        var updatedBook = await _booksCollection.FindOneAndReplaceAsync(
             document => document.Id == id,
-            bookDocument
+            book
         );
-
-
-        var updatedBook = updatedDocument?.ToBook();
-
+        
         // Gestionamos la caché
         var cacheKey = CacheKeyPrefix + id;
 
@@ -111,9 +106,7 @@ public class BooksService : IBooksService
         _logger.LogInformation($"Deleting book with id: {id}");
 
         // Elimina el documento de la base de datos y devuelve el documento eliminado
-        var deletedDocument = await _booksCollection.FindOneAndDeleteAsync(bookDocument => bookDocument.Id == id);
-
-        var deletedBook = deletedDocument?.ToBook();
+        var deletedBook = await _booksCollection.FindOneAndDeleteAsync(bookDocument => bookDocument.Id == id);
 
         // Genera la clave de caché
         var cacheKey = CacheKeyPrefix + id;
@@ -124,7 +117,7 @@ public class BooksService : IBooksService
             _memoryCache.Remove(cacheKey);
             _logger.LogInformation($"Removed cached book with id: {id}");
         }
-        
+
         _logger.LogInformation($"Book deleted with id: {id}");
 
         return deletedBook;

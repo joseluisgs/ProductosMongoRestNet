@@ -5,8 +5,8 @@ using ProductosMongoRestNet.Services;
 namespace ProductosMongoRestNet.Controllers;
 
 [ApiController]
-// [Route("api/[controller]")]
-[Route("api/books")]
+[Route("api/[controller]")]
+//[Route("api/books")]
 public class BooksController : ControllerBase
 {
     private readonly IBooksService _booksService;
@@ -31,5 +31,34 @@ public class BooksController : ControllerBase
         if (book is null) return NotFound();
 
         return book;
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<Book>> Create(Book book)
+    {
+        var savedBook = await _booksService.CreateAsync(book);
+        return CreatedAtAction(nameof(GetById), new { id = book.Id }, savedBook);
+    }
+
+    [HttpPut("{id:length(24)}")]
+    public async Task<ActionResult> Update(
+        string id,
+        [FromBody] Book book)
+    {
+        var updatedBook = await _booksService.UpdateAsync(id, book);
+
+        if (updatedBook is null) return NotFound();
+
+        return Ok(updatedBook);
+    }
+
+    [HttpDelete("{id:length(24)}")]
+    public async Task<ActionResult> Delete(string id)
+    {
+        var deletedBook = await _booksService.DeleteAsync(id);
+
+        if (deletedBook is null) return NotFound();
+
+        return NoContent();
     }
 }

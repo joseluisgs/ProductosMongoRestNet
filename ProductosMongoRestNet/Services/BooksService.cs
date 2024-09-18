@@ -79,13 +79,17 @@ public class BooksService : IBooksService
     public async Task<Book?> UpdateAsync(string id, Book book)
     {
         _logger.LogInformation($"Updating book with id: {id}");
-        
-        // Realiza el reemplazo y devuelve el documento actualizado
-        var updatedBook = await _booksCollection.FindOneAndReplaceAsync(
+
+        // Le ponemos el Id al libro, por si viene sin él
+        book.Id = id;
+
+        // Realiza el reemplazo y devuelve el documento actualizado, devolvemos el documento actualizado (After)
+        var updatedBook = await _booksCollection.FindOneAndReplaceAsync<Book>(
             document => document.Id == id,
-            book
+            book,
+            new FindOneAndReplaceOptions<Book> { ReturnDocument = ReturnDocument.After }
         );
-        
+
         // Gestionamos la caché
         var cacheKey = CacheKeyPrefix + id;
 

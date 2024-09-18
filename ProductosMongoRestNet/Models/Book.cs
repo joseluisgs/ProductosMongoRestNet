@@ -10,7 +10,7 @@ public class Book
     [BsonRepresentation(BsonType.ObjectId)] // Esto indica que el campo es de tipo ObjectId
     public string? Id { get; set; }
 
-    [JsonPropertyName("Name")]
+    [JsonPropertyName("name")]
     [BsonElement("Name")] // Esto indica el nombre del campo en la colección
     public string BookName { get; set; } = null!;
 

@@ -1,10 +1,10 @@
-# PersonasBasicRestNet
+# ProductosMongoRestNet
 
-Ejemplo de una API REST básica en .NET Core 8
+Ejemplo de una API REST básica en .NET Core 8 y MongoDB
 
 ![image](./image/image.webp)
 
-- [PersonasBasicRestNet](#personasbasicrestnet)
+- [ProductosMongoRestNet](#productosmongorestnet)
   - [Descripción](#descripción)
   - [Librerías usadas](#librerías-usadas)
 
